@@ -3,7 +3,10 @@ name = "leak-check-rs"
 version = "0.1.0"
 edition = "2024"
 description = "Rust client for the LeakCheck API"
-license = "MIT"
+license = "BSD-3-Clause"
+repository = "https://github.com/SassafrasAI/leak-check-rs"
+keywords = ["leakcheck", "osint", "breach", "security", "api"]
+categories = ["api-bindings", "network-programming"]
 
 [dependencies]
 reqwest = { version = "0.12", features = ["json"] }
