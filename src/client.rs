@@ -4,12 +4,19 @@ use crate::types::{PublicQueryResponse, QueryOptions, QueryResponse, QueryType, 
 const API_BASE_URL: &str = "https://leakcheck.io/api/v2/query";
 const PUBLIC_API_URL: &str = "https://leakcheck.io/api/public";
 
+/// Client for the LeakCheck Pro API v2 (authenticated).
+///
+/// Requires an API key obtainable from <https://leakcheck.io> account settings.
+/// The key is sent via the `X-API-Key` header.
+///
+/// Rate limited to 3 requests/second by default (upgradeable).
 pub struct LeakCheckClient {
     client: reqwest::Client,
     api_key: String,
 }
 
 impl LeakCheckClient {
+    /// Create a new client with the given API key.
     pub fn new(api_key: impl Into<String>) -> Self {
         Self {
             client: reqwest::Client::new(),
@@ -17,6 +24,7 @@ impl LeakCheckClient {
         }
     }
 
+    /// Create a client with a custom `reqwest::Client` (e.g. for proxy, TLS config).
     pub fn with_http_client(api_key: impl Into<String>, client: reqwest::Client) -> Self {
         Self {
             client,
@@ -24,10 +32,18 @@ impl LeakCheckClient {
         }
     }
 
+    /// Query with auto-detected type and no pagination.
+    ///
+    /// The API will infer the query type (email, username, phone, or hash).
+    /// Returns up to 100 results by default.
     pub async fn query(&self, query: &str) -> Result<QueryResponse, LeakCheckError> {
         self.query_with_options(query, QueryOptions::default()).await
     }
 
+    /// Query with explicit type, limit, and offset.
+    ///
+    /// Use [`QueryOptions::new()`] to build options with the builder pattern.
+    /// Limit is clamped to [`MAX_LIMIT`] (1000), offset to [`crate::MAX_OFFSET`] (2500).
     pub async fn query_with_options(
         &self,
         query: &str,
@@ -68,6 +84,9 @@ impl LeakCheckClient {
         Ok(query_response)
     }
 
+    /// Fetch all results for a query, automatically paginating until complete.
+    ///
+    /// Uses the maximum page size and increments offset until all results are retrieved.
     pub async fn query_all(&self, query: &str, query_type: QueryType) -> Result<Vec<crate::types::LeakResult>, LeakCheckError> {
         let mut all_results = Vec::new();
         let mut offset = 0u32;
@@ -92,21 +111,32 @@ impl LeakCheckClient {
     }
 }
 
+/// Client for the LeakCheck Public API (unauthenticated, no key needed).
+///
+/// Limited to email, email hash, and username lookups.
+/// Does not return passwords or full breach data.
+/// Rate limited to 1 request/second.
 pub struct LeakCheckPublicClient {
     client: reqwest::Client,
 }
 
 impl LeakCheckPublicClient {
+    /// Create a new public API client.
     pub fn new() -> Self {
         Self {
             client: reqwest::Client::new(),
         }
     }
 
+    /// Create a public client with a custom `reqwest::Client`.
     pub fn with_http_client(client: reqwest::Client) -> Self {
         Self { client }
     }
 
+    /// Query the public API for an email, username, or email hash.
+    ///
+    /// The type is auto-detected. Returns source names and breach dates
+    /// but not passwords or full field data.
     pub async fn query(&self, query: &str) -> Result<PublicQueryResponse, LeakCheckError> {
         let response = self
             .client

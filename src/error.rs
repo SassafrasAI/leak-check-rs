@@ -1,5 +1,8 @@
 use thiserror::Error;
 
+/// Errors returned by the LeakCheck API client.
+///
+/// Maps API HTTP status codes to typed variants for ergonomic error handling.
 #[derive(Error, Debug)]
 pub enum LeakCheckError {
     #[error("Missing API key")]
@@ -46,6 +49,7 @@ pub enum LeakCheckError {
 }
 
 impl LeakCheckError {
+    /// Map an HTTP status code and message to a typed error.
     pub fn from_status(status: u16, message: &str) -> Self {
         match status {
             400 if message.contains("Invalid type") => Self::InvalidType,
